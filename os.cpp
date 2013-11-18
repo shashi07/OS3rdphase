@@ -16,8 +16,9 @@ class PCB{
 	
 	public :
 	int Job_id;
-	int TTL,TTC,LLC,TLL;	
-	vector<int> CodePtr,DataPtr;
+	int TTL,TTC,LLC,TLL;
+	int datacount;	
+	vector<int> CodePtr,DataPtr,OutputPtr;
 	PCB(){
 		
 		}
@@ -27,6 +28,7 @@ class PCB{
 		TTL = atoi(card.substr(8,4).c_str());
 		TLL = atoi(card.substr(12,4).c_str());
 		TTC=0;
+		datacount=0;
 		TLL=0;		
 		CodePtr.clear();
 		DataPtr.clear();
@@ -53,9 +55,13 @@ class SuperVisiorMem{
 	
 	int allotEmptyBuffer(){
 			int t;
+			if(!EmptyBuffers.empty()){
 			t=EmptyBuffers.front();
 			EmptyBuffers.pop();
 			return t;
+			}
+			else 
+			return -1;
 		} 
 	
 	void addInputBuffer(int buff_no){
@@ -123,11 +129,52 @@ struct CPU
     string TASK;
 }c;
 
+void loadInMain(PCB *pcb){
+		
+		
+		
+	}
 
+int PD_function(int block_no,PCB *pcb){
+		char ch;
+		int t=c.dm.allocateTrack();
+		pcb->OutputPtr.push_back(t);
+		pcb->LLC++;
+		if(pcb->LLC>pcb->TLL){
+			 return 2;
+			}
+		
+		for(int i=0;i<10;i++)
+		for(int j=0;j<4;j++){
+			ch=c.Mem[block_no+i][j];		
+			c.dm.drum[t][i*10+j] = ch;
+		}       
+		return 0;
+	}
+
+int GD_function(int block_no,PCB *pcb){
+	
+		int k=0;
+		char line[41];
+		if(pcb->datacount>=pcb->DataPtr.size()){
+			 return 1;
+			}
+		strcpy(line,c.dm.drum[pcb->DataPtr[pcb->datacount]]);
+		pcb->datacount++;
+		for(int i=0;i<10;i++)
+		for(int j=0;j<4;j++){
+			if(k>=strlen(line))
+				break;
+			c.Mem[block_no+i][j]=line[k++];
+		}       
+		return 0;
+	}
 void channel1IR(){
 		
 		for(int i=0;i<CH1_TS;i++){
 		int buff_no = c.sm.allotEmptyBuffer();
+		if(buff_no==-1)
+			return;
 		c.inputCard.getline(c.sm.buffer[buff_no],41);
 		cout<<buff_no<<" "<<c.sm.buffer[buff_no]<<"\n";
 		c.sm.addInputBuffer(buff_no);
