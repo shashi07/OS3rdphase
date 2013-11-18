@@ -1,7 +1,12 @@
 #include<iostream>
 #include<vector>
 #include<queue>
+#include<string>
 #include<fstream>
+
+#define CH1_TS 5
+#define CH2_TS 5
+#define CH3_TS 2
 
 using namespace std;
 
@@ -46,6 +51,14 @@ class SuperVisiorMem{
 
 };
 
+class DrumMem{
+	
+	public :
+	char drum[1000][40];
+	
+	
+	
+	}
 
 struct CPU
 {
@@ -58,17 +71,37 @@ struct CPU
     SuperVisiorMem sm;
     char error[100];
     ifstream inputCard;
-    vector<int> v;	
+    vector<int> v;
+    string TASK;
 }c;
 
 
 void channel1IR(){
+		
+		for(int i=0;i<CH1_TS;i++){
 		int buff_no = c.sm.allotEmptyBuffer();
 		c.inputCard.getline(c.sm.buffer[buff_no],40);
 		c.sm.addInputBuffer(buff_no);
-		cout<<c.sm.buffer[buff_no];
+		}
+		//cout<<c.sm.buffer[buff_no];
 	}
-
+void channel3IR(){
+	
+		for(int i=0;i<CH3_TS;i++){
+					
+				switch(c.TASK.c_str()){
+					case "IS" :
+						
+					
+					
+					
+					}
+			
+			
+			}
+		
+		
+	}
 int main(){
 		c.inputCard.open("ip.txt");
 		channel1IR();
