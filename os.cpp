@@ -135,6 +135,7 @@ int no_of_pages=0;
 void clearbuffer(char buffer[][40],int n);
 
 void loadInMain(PCB *pcb){
+		no_of_pages = 0;
 		int n;
 		bool code;
 		char temp[40],ch;
@@ -143,7 +144,7 @@ void loadInMain(PCB *pcb){
    		bool new_block = true,flag=false;
 			pcb->ptr=-1;
 			code = !pcb->CodePtr.empty();
-			while(!pcb->CodePtr.empty() || !pcb->DataPtr.empty())
+			while(!pcb->CodePtr.empty())
 			{
 				for (int q = 0; q < 40; ++q)
 					temp[q]='\0';
@@ -153,16 +154,7 @@ void loadInMain(PCB *pcb){
 					strcpy(temp,c.dm.drum[pcb->CodePtr[0]]);
 					pcb->CodePtr.erase(pcb->CodePtr.begin());		
 				}
-				else 
-				{	
-					if(!pcb->DataPtr.empty())
-					{	
-						strcpy(temp,c.dm.drum[pcb->DataPtr[0]]);	
-						pcb->DataPtr.erase(pcb->DataPtr.begin());
-					}
-					else
-						return;
-				}
+				
 				if (pcb->ptr ==-1)
 				{
 					pcb->ptr = rand() % 30;
@@ -341,7 +333,7 @@ void channel3IR(){
 								else if (card.find("$END")!=-1){
 
 										loadInMain(ptr);
-
+										c.readyQ.push_back(ptr);
 										return;
 									}
 								else{
