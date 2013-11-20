@@ -223,6 +223,8 @@ void loadInMain(PCB *pcb){
 		
 		
 	}
+
+
 void save_state(PCB *pcb)
 {
 	strcpy(pcb->curr_state.IC, c.IC);
@@ -281,7 +283,186 @@ int GD_function(int block_no,PCB *pcb){
 		}       
 		return 0;
 	}
+void printmsg2(char str[])
+{
+	/*ofstream linePrinter;
+    char ch;
+    linePrinter.open("LinePrinter.txt",ios::app);
+    linePrinter.put('\n');
+    for(int i=0;i<strlen(str);i++)
+		   linePrinter.put(str[i]);	
 
+	linePrinter.close();*/
+	cout<<str;
+}
+
+void printmsg(char str[][40],int n)
+{
+        ofstream linePrinter;
+    char ch;
+    linePrinter.open("LinePrinter.txt",ios::app);
+    linePrinter.put('\n');
+    for(int i=0;i<strlen(str[n]);i++)
+                   linePrinter.put(str[n][i]);        
+
+        linePrinter.close();
+}
+int AddressMap(char VA[],PCB *pcb)
+{
+	int RA;
+	if(isdigit(VA[0]) && isdigit(VA[1])){
+			if(c.Mem[pcb->ptr*10+(VA[0]-'0')][0]=='#')
+				{
+					c.PI=3;
+					}
+			else
+			{
+				RA= (c.Mem[pcb->ptr*10+(VA[0]-'0')][0] -'0') *10 + (c.Mem[pcb->ptr*10+(VA[0]-'0')][1] -'0');
+				RA = RA*10 +(VA[1]-'0');
+				
+			}
+		
+		}
+	else
+		c.PI=2;
+
+	return RA;
+}
+void Terminate(int EM)
+{
+
+	switch (EM) {
+
+			case 0:
+				printmsg2("Error:  NO ERROR");
+				break;
+			case 1:
+				printmsg2("Error:  OUT OF DATA");
+				break;
+			case 2:
+				printmsg2("Error:  LINE LIMIT EXCEEDED");
+				break;
+			case 3:
+				printmsg2("Error:  TIME LIMIT EXCEEDED");
+				break;
+			case 4:
+				printmsg2("Error:  OPERATION CODE ERROR");
+				break;
+			case 5:
+				printmsg2("Error:  OPERAND ERROR");
+				break;
+			case 6:
+				printmsg2("Error:  INVALID PAGE FAULT");
+				break;
+			case 7:
+				printmsg2("Error:  TIME LIMIT EXCEEDED  And OPERATION CODE ERROR");
+				break;
+			case 8:
+				printmsg2("Error:  TIME LIMIT EXCEEDED And OPERAND ERROR");
+				break;
+			}
+			//pcb.TTL = pcb.TLL = pcb.TTC = pcb.LLC = 0;
+	
+	}
+
+int master_mode(PCB *cpcb)
+{
+    int block_no;
+    int EM;
+    char op[2];
+    op[0]=c.IR[2];
+    op[1]='0';
+    block_no = AddressMap(op,cpcb); 
+    cout<<"block no:"<<block_no<<endl;
+    if(c.TI==0 && c.SI ==1){
+		EM=GD_function(block_no,cpcb);
+		c.SI=0;
+		if(EM>=0)
+			{
+				Terminate(EM);
+				return -1;
+				}
+		}
+	else if(c.TI == 0 && c.SI == 2){
+		EM=PD_function(block_no,cpcb);
+		c.SI=0;
+		if(EM>=0)
+			{
+				Terminate(EM);
+				return -1;
+				}
+		}
+	else if(c.TI == 0 && c.SI == 3){
+		c.SI=0;
+		Terminate(0);
+		return -1;
+		}
+	else if(c.TI == 2 && c.SI == 1 && c.PI==0){
+		Terminate(3);
+		return -1;
+		}
+	else if(c.TI == 2 && c.SI == 2){
+		c.SI=0;
+		PD_function(block_no,cpcb);
+		Terminate(3);
+		return -1;
+		}
+	else if(c.TI == 2 && c.SI == 3){
+		Terminate(0);
+		return -1;
+		}
+	else if(c.TI == 0 && c.PI == 1){
+		Terminate(4);
+		return -1;
+		}
+	else if(c.TI == 0 && c.PI == 2){
+		Terminate(5);
+		return -1;
+		}
+
+	else if(c.TI == 0 && c.PI == 3){
+			int currentPage,t;
+    	if(c.IR[0]=='G'&&c.IR[1]=='D' ||(c.IR[0] == 'S' && c.IR[1] == 'R'))
+        	{
+				while(1){
+				currentPage = rand() %30;
+				for(t=0;t<c.v.size();t++)
+				{
+					if(c.v[t]==currentPage)
+						break;
+				}
+				if(t>=c.v.size())
+					break;
+				}
+			c.v.push_back(currentPage);
+			c.Mem[cpcb->ptr*10+(c.IR[2]-'0')][0] = '0'+currentPage/10;
+			c.Mem[cpcb->ptr*10+(c.IR[2]-'0')][1] = '0'+currentPage%10;
+			no_of_pages++;
+			c.PI=0;
+			if(c.IC[1]=='0')
+			{
+					c.IC[1]='9';
+					c.IC[0]--;
+			}
+			else
+			c.IC[1]--;
+			cpcb->TTC--;
+			cpcb->TTC++;
+			if (cpcb->TTC > cpcb->TTL) {
+			c.TI = 2;
+			}
+			
+			}
+			else
+			{
+				Terminate(6);
+				return -1;
+				}
+		}
+	return 0;
+	cout<<"mastermode_here\n";
+	
+}
 void IOExecute()
 {
 
@@ -312,6 +493,174 @@ void IOExecute()
 
 	}
 }
+
+
+void copy(char A[],char B[])
+{
+	for(int i=0;i<4;i++)
+		A[i]=B[i];
+	
+}
+void clearMem()
+{
+	for(int i=0;i<300;i++)
+		for(int j=0;j<4;j++)
+		{
+			c.Mem[i][j]='\0';
+	    }
+	
+	c.SI=0;
+	c.T = false;
+	c.v.clear();
+	c.loadQ.clear();
+	c.readyQ.clear();
+	c.SI = c.PI = c.TI = 0;
+	//pcb.TTC = pcb.LLC = pcb.TLL = pcb.TTL = 0; 
+	no_of_pages=0;
+	}
+bool compare(char A[],char B[])
+{
+	bool result = true;
+	for(int i=0;i<4;i++)
+		if(A[i]!=B[i])
+		{
+			result=false;
+			break;
+			}
+		return result;
+	}
+
+int execute(PCB *pcb)
+ {
+
+	bool endprogram=false;
+	int x=0,a1,a2;
+	c.IC[0]=c.IC[1]='0';
+	strcpy(c.error,"\0");
+	char op[2];
+	cout<<endl<<"Page Table Pointer"<<pcb->ptr;
+	while(true)
+	{
+		
+		
+			int RA = AddressMap(c.IC,pcb);
+			
+			cout<<"mem2"<<c.Mem[RA][3];
+			for (int i = 0; i < 4; ++i)
+			{
+				c.IR[i] = c.Mem[RA][i];
+			}
+			cout<<"\nInstruction : ";
+	        for(int i=0;i<4;i++)
+					cout<<(char)c.IR[i];
+			a1 = c.IR[2] - '0';
+			a2 = c.IR[3] - '0';
+			if (c.IC[1] == '9')
+	        {
+	          c.IC[0]++;
+	          c.IC[1]='0';
+	        }
+	        else
+	          c.IC[1]++;
+
+			
+			cout<<endl<<"Real Address:"<<" "<<RA<<endl;
+			if(c.IR[0]!='H'){
+			 op[0]=c.IR[2];
+			 op[1]=c.IR[3];
+			 x = AddressMap(op,pcb); 
+			}
+			cout<<"\nOperand:"<<x;
+			if (c.PI == 0)// if no page fault: START EXAMINE LOOP
+			{
+				if(c.IR[0]=='H')
+				{
+					c.SI=3;
+					c.TI = 0;
+				}
+
+				else if(c.IR[0]=='G' && c.IR[1] == 'D')
+				{
+					c.SI=1;
+					c.TI = 0;
+					
+				}
+
+				else if(c.IR[0]=='P' && c.IR[1] == 'D')
+				{
+					c.SI=2;
+					c.TI = 0;
+					
+				} 
+
+				else if(c.IR[0]=='L' && c.IR[1] == 'R'){
+					c.SI = 0;
+					copy(c.R,c.Mem[x]);
+					cout<<"\nRegister: ";
+					for(int i=0;i<4;i++)
+						cout<<c.R[i];
+					cout<<endl;
+				}
+
+				 else if (c.IR[0] == 'S' && c.IR[1] == 'R')
+		        	copy(c.Mem[x],c.R);       
+
+				 else if (c.IR[0] == 'C' && c.IR[1] == 'R')
+				{  
+					for(int i=0;i<4;i++)
+						cout<<c.Mem[x][i];
+						cout<<endl;
+					for(int i=0;i<4;i++)
+						cout<<c.R[i];
+						cout<<endl;	
+					c.T = compare(c.R,c.Mem[x]);
+				}
+				
+				else if (c.IR[0] == 'B' && c.IR[1] == 'T')
+				{
+					cout<<"next IC :"<<x<<endl;
+					cout<<"Toggle : "<<c.T<<endl;
+					if(c.T)
+					{
+
+						c.IC[1]=x/10 + '0';
+						c.IC[0] = x%10 + '0';
+					}
+		            
+
+				}
+
+				else
+					c.PI = 1;
+
+
+				pcb->TTC++;
+				if (pcb->TTC > pcb->TTL) 
+					c.TI = 2;
+				}
+
+
+				if (a1 > 10 || a2 > 10) 
+				{
+					c.PI = 2;
+				}
+
+		
+		if (c.SI !=0 || c.PI!=0 || c.TI!=0)
+			if(master_mode(pcb)==-1)
+				break;
+		
+		
+		if (strlen(c.error)> 1)
+			break;
+		
+
+	}
+		 
+	 	return 0;
+	 
+}
+
 void channel1IR(){
 		
 		for(int i=0;i<CH1_TS;i++){
@@ -328,17 +677,7 @@ void channel1IR(){
 		
 	}
 
-void printmsg(char str[][40],int n)
-{
-	ofstream linePrinter;
-    char ch;
-    linePrinter.open("LinePrinter.txt",ios::app);
-    linePrinter.put('\n');
-    for(int i=0;i<strlen(str[n]);i++)
-		   linePrinter.put(str[n][i]);	
 
-	linePrinter.close();
-}
 
 void clearbuffer(char buffer[][40],int n)
 {
@@ -398,6 +737,7 @@ void channel3IR(){
 
 										loadInMain(ptr);
 										c.readyQ.push_back(ptr);
+										execute(ptr);
 										return;
 									}
 								else{
