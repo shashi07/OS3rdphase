@@ -6,9 +6,9 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
-#define CH1_TS 10
+#define CH1_TS 5
 #define CH2_TS 5
-#define CH3_TS 30
+#define CH3_TS 5
 
 using namespace std;
 
@@ -128,11 +128,11 @@ struct CPU
     vector<int> v;
     string TASK;
 }c;
+
+
 int no_of_pages=0;
 
 void clearbuffer(char buffer[][40],int n);
-
-
 
 void loadInMain(PCB *pcb){
 		int n;
@@ -261,13 +261,14 @@ int GD_function(int block_no,PCB *pcb){
 void channel1IR(){
 		
 		for(int i=0;i<CH1_TS;i++){
+		if(c.inputCard.eof())
+			return;
 		int buff_no = c.sm.allotEmptyBuffer();
 		clearbuffer(c.sm.buffer,buff_no);
 		if(buff_no==-1)
 			return;
 		c.inputCard.getline(c.sm.buffer[buff_no],41);
 		cout<<buff_no<<" "<<c.sm.buffer[buff_no]<<"\n";
-		
 		c.sm.addInputBuffer(buff_no);
 		}
 		
@@ -284,6 +285,7 @@ void printmsg(char str[][40],int n)
 
 	linePrinter.close();
 }
+
 void clearbuffer(char buffer[][40],int n)
 {
 	for (int i = 0; i < strlen(buffer[n]); ++i)
@@ -370,10 +372,11 @@ int main(){
 			clearbuffer(c.sm.buffer,i);
 		}
 		c.inputCard.open("ip.txt");
+		for(int i=0;i<10;i++){
 		channel1IR();
 		c.TASK = string("IS");
 		channel3IR();
-		
+	}
 		cout<<"size:"<<c.loadQ.front()->DataPtr.size();
 		for(int i=0;i<c.loadQ.front()->DataPtr.size();i++)
 		{
