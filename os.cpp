@@ -12,6 +12,13 @@
 
 using namespace std;
 
+
+struct state
+{
+	char IC[4],R[4],IR[4],error[100];
+	bool T;
+	int SI,TI,PI;
+};
 class PCB{
 	
 	public :
@@ -19,6 +26,7 @@ class PCB{
 	int TTL,TTC,LLC,TLL,ptr;
 	int datacount;	
 	vector<int> CodePtr,DataPtr,OutputPtr;
+	state curr_state;
 	PCB(){
 		
 		}
@@ -124,7 +132,7 @@ struct CPU
     DrumMem dm;
     char error[100];
     ifstream inputCard;
-    deque<PCB*> loadQ,readyQ;
+    deque<PCB*> loadQ,readyQ,IOQ,terminateQ;
     vector<int> v;
     string TASK;
 }c;
@@ -215,6 +223,29 @@ void loadInMain(PCB *pcb){
 		
 		
 	}
+void save_state(PCB *pcb)
+{
+	strcpy(pcb->curr_state.IC, c.IC);
+	strcpy(pcb->curr_state.IR, c.IR);
+	strcpy(pcb->curr_state.R, c.R);
+	strcpy(pcb->curr_state.error, c.error);
+	pcb->curr_state.T=c.T;
+	pcb->curr_state.SI = c.SI;
+	pcb->curr_state.PI = c.PI;
+	pcb->curr_state.TI = c.TI;
+}
+
+void recover(PCB *pcb)
+{
+	strcpy(c.IC, pcb->curr_state.IC);
+	strcpy(c.IR, pcb->curr_state.IR);
+	strcpy(c.R, pcb->curr_state.R);
+	strcpy(c.error, pcb->curr_state.error);
+	c.T=pcb->curr_state.T;
+	c.SI = pcb->curr_state.SI;
+	c.PI = pcb->curr_state.PI;
+	c.TI = pcb->curr_state.TI;
+}
 
 int PD_function(int block_no,PCB *pcb){
 		char ch;
@@ -250,6 +281,37 @@ int GD_function(int block_no,PCB *pcb){
 		}       
 		return 0;
 	}
+
+void IOExecute()
+{
+
+	int a1,a2;
+	int block_no;
+	if(!c.IOQ.empty())
+	{
+		PCB *pcb = c.IOQ.front();
+		c.IOQ.pop_front();
+		save_state(pcb);
+		a1 = pcb->curr_state.IR[2] - '0';
+		a2 = pcb->curr_state.IR[3] - '0';
+		if(a1> 10 || a2>10){
+			pcb->curr_state.PI = 2;
+			return;
+		}
+		block_no = a1*10+a2;;
+	
+		if(pcb->curr_state.IC[0] == 'G' && pcb->curr_state.IC[0] == 'D')
+			GD_function(block_no,pcb);
+		else
+			PD_function(block_no,pcb);
+		save_state(pcb);
+		if(c.PI !=2)
+			c.readyQ.push_back(pcb);
+		else
+			c.terminateQ.push_back(pcb);
+
+	}
+}
 void channel1IR(){
 		
 		for(int i=0;i<CH1_TS;i++){
@@ -301,6 +363,8 @@ void channel2IR()
 
 
 }	
+
+
 void channel3IR(){
 		bool code;
 		for(int i=0;i<CH3_TS;i++){
@@ -367,6 +431,7 @@ int main(){
 		for(int i=0;i<10;i++){
 		channel1IR();
 		c.TASK = string("IS");
+		cout<<endl<<endl<<c.loadQ.size()<<endl<<endl;
 		channel3IR();
 	}
 		cout<<"size:"<<c.loadQ.front()->DataPtr.size();
