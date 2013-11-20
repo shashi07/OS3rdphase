@@ -355,9 +355,7 @@ void channel3IR(){
 									}
 							}
 					
-					
-					
-					}
+					}		
 			
 			
 			}
