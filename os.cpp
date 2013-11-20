@@ -1,11 +1,11 @@
-#include<iostream>
-#include<vector>
-#include<queue>
-#include<deque>
-#include<string>
-#include<fstream>
-#include<cstring>
-#include<cstdlib>
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <deque>
+#include <string>
+#include <fstream>
+#include <cstring>
+#include <cstdlib>
 #define CH1_TS 5
 #define CH2_TS 5
 #define CH3_TS 30
@@ -16,7 +16,7 @@ class PCB{
 	
 	public :
 	int Job_id;
-	int TTL,TTC,LLC,TLL;
+	int TTL,TTC,LLC,TLL,ptr;
 	int datacount;	
 	vector<int> CodePtr,DataPtr,OutputPtr;
 	PCB(){
@@ -94,7 +94,7 @@ class DrumMem{
 	queue<int> EmptyTracks;
 	DrumMem(){
 			drum[0][0] = 0;
-			for(int i=0;i<1000;i++)
+			for(int i=0;i<100;i++)
 				EmptyTracks.push(i);
 		}
 	
@@ -128,9 +128,98 @@ struct CPU
     vector<int> v;
     string TASK;
 }c;
+int no_of_pages=0;
+
+
+
+
 
 void loadInMain(PCB *pcb){
+		int n;
+		bool code;
+		char temp[40],ch;
+		int b=0;
+		int k=-1,i=0,j,currP=0,x=0,l,uptr,m,currentPage;
+   		bool new_block = true,flag=false;
 		
+			pcb->ptr=-1;
+			cout<<"Code_Size"<<pcb->CodePtr.size();
+			while(!pcb->CodePtr.empty() && !pcb->DataPtr.empty())
+			{
+
+				if(!pcb->CodePtr.empty())
+				{
+				strcpy(temp,c.dm.drum[pcb->CodePtr[0]]);
+				cout<<"temp"<<temp;
+				pcb->CodePtr.erase(pcb->CodePtr.begin());
+				}
+				else 
+				{
+					if(!pcb->DataPtr.empty())
+					{
+						strcpy(temp,c.dm.drum[pcb->DataPtr[0]]);
+						cout<<"\n\ntemp"<<temp;
+						pcb->DataPtr.erase(pcb->DataPtr.begin());
+					}
+					else
+						return;
+				}
+
+
+		
+				if (pcb->ptr ==-1)
+				{
+					pcb->ptr = rand() % 30;
+					if(pcb->ptr==-1){
+						exit(0);
+					}
+					uptr = pcb->ptr*10;
+					for(int n=0;n<10;n++)
+						for(int o=0;o<4;o++)
+							c.Mem[uptr+n][o]='#';
+				}
+				b=-1;
+				while(b!=40)
+				{
+
+					b++;
+					ch=temp[b];
+				
+					if(isprint(ch))
+				  	{
+						if(i%4==0){
+							k++;
+							if(k%10==0)
+								flag=true;
+						}
+							if(flag)
+							{
+								flag = false;
+								k=0;
+								while(1)
+								{
+									currentPage = rand() %30;
+									for(j=0;j<c.v.size();j++)
+									{
+										if(c.v[j]==currentPage)
+											break;
+									}
+										if(j>=c.v.size())
+										break;
+								}
+									no_of_pages++;
+									c.v.push_back(currentPage);	
+							}
+							
+							c.Mem[pcb->ptr*10+no_of_pages-1][0] = '0'+currentPage/10;
+							c.Mem[pcb->ptr*10+no_of_pages-1][1] = '0'+currentPage%10;
+						
+						  c.Mem[currentPage*10+k][i%4] = ch;
+						  i++;
+				
+				  	}
+			  	}
+			}
 		
 		
 	}
@@ -181,6 +270,41 @@ void channel1IR(){
 		}
 		
 	}
+
+void printmsg(char str[][40],int n)
+{
+	ofstream linePrinter;
+    char ch;
+    linePrinter.open("LinePrinter.txt",ios::app);
+    linePrinter.put('\n');
+    for(int i=0;i<strlen(str[n]);i++)
+		   linePrinter.put(str[n][i]);	
+
+	linePrinter.close();
+}
+void clearbuffer(char buffer[][40],int n)
+{
+	for (int i = 0; i < strlen(buffer[n]); ++i)
+	{
+		buffer[n][i] = '\0';
+	}
+}
+void channel2IR()
+{
+	int temp;
+	for(int i=0;i<CH1_TS;i++){
+			if(!c.sm.OutputFullBuffers.empty())
+			{
+					temp = c.sm.OutputFullBuffers.front();
+					printmsg(c.sm.buffer,temp);
+			}
+			clearbuffer(c.sm.buffer,temp);
+			c.sm.OutputFullBuffers.pop();
+			c.sm.EmptyBuffers.push(temp);
+	}
+
+
+}	
 void channel3IR(){
 		bool code;
 		for(int i=0;i<CH3_TS;i++){
@@ -208,10 +332,13 @@ void channel3IR(){
 									}
 								else if(card.find("$DTA")!=-1){
 										code =false;
-										return;
+										
 									}
 								else if (card.find("$END")!=-1){
-									
+										
+										cout<<"hellllo";
+										loadInMain(ptr);
+										return;
 									}
 								else{
 										PCB *pcb = c.loadQ.front();
@@ -236,14 +363,24 @@ void channel3IR(){
 		
 	}
 int main(){
+		for (int i = 0; i < 10; ++i)
+		{
+			clearbuffer(c.sm.buffer,i);
+		}
 		c.inputCard.open("ip.txt");
 		channel1IR();
 		c.TASK = string("IS");
 		channel3IR();
-		cout<<c.loadQ.front()->CodePtr.size();
-		for(int i=0;i<c.loadQ.front()->CodePtr.size();i++)
+		cout<<"size:"<<c.loadQ.front()->DataPtr.size();
+		for(int i=0;i<c.loadQ.front()->DataPtr.size();i++)
 		{
-			cout<<c.dm.drum[c.loadQ.front()->CodePtr[i]]<<endl;
+			cout<<c.dm.drum[c.loadQ.front()->DataPtr[i]]<<endl;
 			
 			}
+		cout<<"memory"<<endl;
+		for (int i = 0; i < 300; ++i)
+		{
+			cout<<c.Mem[i];
+		}
+		
 	}
