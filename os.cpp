@@ -467,29 +467,39 @@ void IOExecute()
 {
 
 	int a1,a2;
-	int block_no;
+	int block_no,EM,x;
 	if(!c.IOQ.empty())
 	{
 		PCB *pcb = c.IOQ.front();
 		c.IOQ.pop_front();
 		save_state(pcb);
-		a1 = pcb->curr_state.IR[2] - '0';
-		a2 = pcb->curr_state.IR[3] - '0';
-		if(a1> 10 || a2>10){
-			pcb->curr_state.PI = 2;
-			return;
+		
+		if(pcb->curr_state.TI==0 && pcb->curr_state.SI ==1)
+		{
+			EM=GD_function(block_no,pcb);
+			pcb->curr_state.SI=0;
+			if(EM>=0)
+			{
+				Terminate(EM);	
+				x=-1;	
+			}
 		}
-		block_no = a1*10+a2;;
-	
-		if(pcb->curr_state.IC[0] == 'G' && pcb->curr_state.IC[0] == 'D')
-			GD_function(block_no,pcb);
-		else
-			PD_function(block_no,pcb);
+
+		else if(pcb->curr_state.TI == 0 && pcb->curr_state.SI == 2){
+		EM=PD_function(block_no,pcb);
+		pcb->curr_state.SI=0;
+		if(EM>=0)
+			{
+				Terminate(EM);
+				x = -1;
+				}
+		}
 		save_state(pcb);
-		if(c.PI !=2)
-			c.readyQ.push_back(pcb);
-		else
+		if(x ==-1)
 			c.terminateQ.push_back(pcb);
+		else
+			c.readyQ.push_back(pcb);
+		
 
 	}
 }
@@ -538,10 +548,7 @@ int execute(PCB *pcb)
 	c.IC[0]=c.IC[1]='0';
 	strcpy(c.error,"\0");
 	char op[2];
-	cout<<endl<<"Page Table Pointer"<<pcb->ptr;
-	while(true)
-	{
-		
+	cout<<endl<<"Page Table Pointer"<<pcb->ptr;	
 		
 			int RA = AddressMap(c.IC,pcb);
 			
@@ -583,6 +590,7 @@ int execute(PCB *pcb)
 				{
 					c.SI=1;
 					c.TI = 0;
+					return 1;
 					
 				}
 
@@ -590,6 +598,7 @@ int execute(PCB *pcb)
 				{
 					c.SI=2;
 					c.TI = 0;
+					return 1;
 					
 				} 
 
@@ -648,15 +657,17 @@ int execute(PCB *pcb)
 		
 		if (c.SI !=0 || c.PI!=0 || c.TI!=0)
 			if(master_mode(pcb)==-1)
-				break;
+			{
+
+				return -1;
+			}
 		
 		
 		if (strlen(c.error)> 1)
-			break;
+			return -1;
 		
 
-	}
-		 
+			 
 	 	return 0;
 	 
 }
@@ -706,6 +717,8 @@ void channel2IR()
 
 void channel3IR(){
 		bool code;
+		PCB *ptr;
+		int n;
 		for(int i=0;i<CH3_TS;i++){
 					//cout<<"here";
 				if(c.TASK.compare("IS")==0){
@@ -753,7 +766,24 @@ void channel3IR(){
 									}
 							}
 					
-					}		
+					}
+					else if (!c.IOQ.empty())
+					{
+						IOExecute();
+					}
+					if(!c.readyQ.empty())	
+					{
+						ptr = c.readyQ.front();
+						n = execute(ptr); 
+						save_state(ptr);
+						c.readyQ.pop_front();
+						if (n==0)
+							c.readyQ.push_back(ptr);
+						if (n==1)
+							c.IOQ.push_back(ptr);
+						if (n==-1)
+							c.terminateQ.push_back(ptr);
+					}	
 			
 			
 			}
