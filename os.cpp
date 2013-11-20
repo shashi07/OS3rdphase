@@ -6,7 +6,7 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
-#define CH1_TS 5
+#define CH1_TS 10
 #define CH2_TS 5
 #define CH3_TS 30
 
@@ -130,7 +130,7 @@ struct CPU
 }c;
 int no_of_pages=0;
 
-
+void clearbuffer(char buffer[][40],int n);
 
 
 
@@ -141,32 +141,28 @@ void loadInMain(PCB *pcb){
 		int b=0;
 		int k=-1,i=0,j,currP=0,x=0,l,uptr,m,currentPage;
    		bool new_block = true,flag=false;
-		
 			pcb->ptr=-1;
-			cout<<"Code_Size"<<pcb->CodePtr.size();
-			while(!pcb->CodePtr.empty() && !pcb->DataPtr.empty())
+			code = !pcb->CodePtr.empty();
+			while(!pcb->CodePtr.empty() || !pcb->DataPtr.empty())
 			{
-
+				for (int q = 0; q < 40; ++q)
+					temp[q]='\0';
+				
 				if(!pcb->CodePtr.empty())
 				{
-				strcpy(temp,c.dm.drum[pcb->CodePtr[0]]);
-				cout<<"temp"<<temp;
-				pcb->CodePtr.erase(pcb->CodePtr.begin());
+					strcpy(temp,c.dm.drum[pcb->CodePtr[0]]);
+					pcb->CodePtr.erase(pcb->CodePtr.begin());		
 				}
 				else 
-				{
+				{	
 					if(!pcb->DataPtr.empty())
-					{
-						strcpy(temp,c.dm.drum[pcb->DataPtr[0]]);
-						cout<<"\n\ntemp"<<temp;
+					{	
+						strcpy(temp,c.dm.drum[pcb->DataPtr[0]]);	
 						pcb->DataPtr.erase(pcb->DataPtr.begin());
 					}
 					else
 						return;
 				}
-
-
-		
 				if (pcb->ptr ==-1)
 				{
 					pcb->ptr = rand() % 30;
@@ -179,6 +175,8 @@ void loadInMain(PCB *pcb){
 							c.Mem[uptr+n][o]='#';
 				}
 				b=-1;
+				k=-1;
+				i=0;
 				while(b!=40)
 				{
 
@@ -218,6 +216,8 @@ void loadInMain(PCB *pcb){
 						  i++;
 				
 				  	}
+				  	else
+				  		break;
 			  	}
 			}
 		
@@ -262,10 +262,12 @@ void channel1IR(){
 		
 		for(int i=0;i<CH1_TS;i++){
 		int buff_no = c.sm.allotEmptyBuffer();
+		clearbuffer(c.sm.buffer,buff_no);
 		if(buff_no==-1)
 			return;
 		c.inputCard.getline(c.sm.buffer[buff_no],41);
 		cout<<buff_no<<" "<<c.sm.buffer[buff_no]<<"\n";
+		
 		c.sm.addInputBuffer(buff_no);
 		}
 		
@@ -335,9 +337,9 @@ void channel3IR(){
 										
 									}
 								else if (card.find("$END")!=-1){
-										
-										cout<<"hellllo";
+
 										loadInMain(ptr);
+
 										return;
 									}
 								else{
@@ -363,6 +365,8 @@ void channel3IR(){
 		
 	}
 int main(){
+		ofstream o;
+		o.open("Mem.txt");
 		for (int i = 0; i < 10; ++i)
 		{
 			clearbuffer(c.sm.buffer,i);
@@ -371,16 +375,19 @@ int main(){
 		channel1IR();
 		c.TASK = string("IS");
 		channel3IR();
+		
 		cout<<"size:"<<c.loadQ.front()->DataPtr.size();
 		for(int i=0;i<c.loadQ.front()->DataPtr.size();i++)
 		{
 			cout<<c.dm.drum[c.loadQ.front()->DataPtr[i]]<<endl;
 			
 			}
-		cout<<"memory"<<endl;
-		for (int i = 0; i < 300; ++i)
-		{
-			cout<<c.Mem[i];
-		}
+	
+		for(int i=0;i<300;i++){
+		for(int j=0;j<4;j++)
+				o<< c.Mem[i][j]<<"";
+	    o<<endl;
+
+	}
 		
 	}
